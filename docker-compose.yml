@@ -14,12 +14,15 @@ services:
       retries: 10
 
   api:
-    build: ./backend
-    env_file:
-      - ./backend/.env
+    build:
+      context: .
+      dockerfile: Backend.Dockerfile
     environment:
       DATABASE_URL: postgresql+psycopg://farepulse:farepulse_local_password@db:5432/farepulse
       CORS_ORIGINS: http://localhost:5173
+      FARE_PROVIDER: demo
+      SCHEDULER_ENABLED: "true"
+      COLLECTION_INTERVAL_MINUTES: 360
     ports:
       - "8000:8000"
     depends_on:
@@ -27,7 +30,9 @@ services:
         condition: service_healthy
 
   web:
-    build: ./frontend
+    build:
+      context: .
+      dockerfile: Dockerfile
     ports:
       - "5173:80"
     depends_on:
