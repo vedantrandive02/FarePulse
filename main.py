@@ -8,11 +8,11 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from .config import settings
-from .database import Base, engine, get_db, SessionLocal
-from .models import FareObservation, RouteTrack, PriceAlert
-from .schemas import TrackCreate, AlertCreate
-from .providers import search_fares
+from config import settings
+from database import Base, engine, get_db, SessionLocal
+from models import FareObservation, RouteTrack, PriceAlert
+from schemas import TrackCreate, AlertCreate
+from providers import search_fares
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("farepulse")
@@ -53,7 +53,7 @@ def check_alerts(db, origin, destination, departure_date, lowest):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
-    if settings.collection_interval_minutes > 0:
+    if settings.scheduler_enabled and settings.collection_interval_minutes > 0:
         scheduler.add_job(collect_for_track, "interval",
             minutes=settings.collection_interval_minutes, id="fare_collection",
             replace_existing=True, max_instances=1)
@@ -91,7 +91,8 @@ async def fare_search(origin: str = Query(min_length=3, max_length=3),
     try:
         fares = await search_fares(origin, destination, departure_date, adults)
     except Exception as exc:
-        raise HTTPException(502, f"Fare provider error: {str(exc)}")
+        log.exception("Fare provider request failed")
+        raise HTTPException(502, "Fare provider request failed. Check provider settings and try again.")
     for item in fares:
         db.add(FareObservation(**item, collected_at=datetime.utcnow()))
     db.commit()
