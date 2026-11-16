@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
 import { Plane, Activity, Bell, Search, TrendingUp, Database, Download, Plus, ArrowUpRight, RefreshCw, Menu, X, Radio, ShieldCheck, Clock3, MapPin, ChartNoAxesCombined } from 'lucide-react'
 
-const API = import.meta.env.VITE_API_URL || ''
-const today = new Date().toISOString().slice(0,10)
+const API = (import.meta.env.VITE_API_URL || '').replace(/\\/+$/, '')
+const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0,10)
 const fmt = n => new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(Number(n||0))
 const dateLabel = s => new Date(s).toLocaleDateString('en-IN',{day:'numeric',month:'short'})
 const airportNames = {DEL:'New Delhi',BOM:'Mumbai',BLR:'Bengaluru',HYD:'Hyderabad',MAA:'Chennai',CCU:'Kolkata',GOI:'Goa',PNQ:'Pune',JAI:'Jaipur',AMD:'Ahmedabad'}
@@ -18,7 +18,7 @@ function App(){
  const [chartRange,setChartRange]=useState('All')
  const [error,setError]=useState('')
  const api=async(path,opts={})=>{const r=await fetch(`${API}${path}`,{headers:{'Content-Type':'application/json',...(opts.headers||{})},...opts});if(!r.ok){let e=await r.json().catch(()=>({detail:'Request failed'}));throw new Error(e.detail||'Request failed')}return r.json()}
- const load=async()=>{try{const [h,d,t,a,i]=await Promise.all([api('/api/health'),api('/api/dashboard'),api('/api/tracks'),api('/api/alerts'),api('/api/research/index')]);setHealth(h);setDash(d);setTracks(t);setAlerts(a);setIndexRows(i)}catch(e){setError('Cannot connect to FarePulse API. Start the backend on port 8000.');}}
+ const load=async()=>{try{const [h,d,t,a,i]=await Promise.all([api('/api/health'),api('/api/dashboard'),api('/api/tracks'),api('/api/alerts'),api('/api/research/index')]);setHealth(h);setDash(d);setTracks(t);setAlerts(a);setIndexRows(i)}catch(e){setError('Unable to load FarePulse data. Check the API deployment and database configuration.');}}
  useEffect(()=>{load()},[])
  const search=async(e)=>{e?.preventDefault();setLoading(true);setNotice('');setError('');try{const q=new URLSearchParams({origin,destination,departure_date:travelDate,adults:'1'});const r=await api(`/api/fares/search?${q}`);setFares(r.fares);setSearchDone(true);setNotice(r.message);const hist=await api(`/api/routes/${origin}/${destination}/history?departure_date=${travelDate}`);setHistory(hist);await load()}catch(e){setError(e.message)}finally{setLoading(false)}}
  const track=async()=>{try{await api('/api/tracks',{method:'POST',body:JSON.stringify({origin,destination,departure_date:travelDate})});setNotice('Route added to your tracking list.');await load()}catch(e){setError(e.message)}}
