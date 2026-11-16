@@ -46,7 +46,7 @@ Save the environment variables, then trigger a new deployment from the Vercel De
 
 - `https://YOUR-PROJECT.vercel.app/`
 - `https://YOUR-PROJECT.vercel.app/api/health`
-- `https://YOUR-PROJECT.vercel.app/docs`
+- `https://YOUR-PROJECT.vercel.app/api/docs`
 
 The health endpoint should return `status: ok`. The first API invocation creates the database tables.
 
@@ -70,7 +70,7 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
-API docs: http://127.0.0.1:8000/docs
+API docs: http://127.0.0.1:8000/api/docs
 
 ### Frontend
 
