@@ -1,57 +1,91 @@
-# FarePulse — Airfare Intelligence & Price Tracking
+# FarePulse — Airfare Intelligence
 
-FarePulse is a full-stack airfare monitoring and research prototype. It provides route search, fare history, target-price alerts, a route-wise airfare index, CSV exports, and scheduled collection.
+FarePulse is a full-stack airfare research prototype with flight-offer search, route tracking, fare history, target-price alerts, a route-wise index, and CSV export.
 
-## Important data transparency
-- **Demo mode is enabled by default.** Demo fares are generated sample records and are visibly labelled as sample data in the UI.
-- For actual provider-backed fares, configure Amadeus credentials and set `FARE_PROVIDER=amadeus`. Availability, coverage, and pricing depend on your provider account and API environment.
-- This is a research prototype, not an official Consumer Price Index or a guaranteed cheapest-fare service.
-- FarePulse stores observations returned by the configured provider. It does not bypass airline websites, CAPTCHAs, or access restrictions.
+## Data transparency
 
-## Features
-- Search fares by origin, destination, departure date, and passenger count.
-- Track a route/date and inspect historical recorded observations.
-- Set target-price alerts; alert checks run when new observations are collected.
-- Explore a baseline-normalized route index.
-- Export observations and index data as CSV.
-- Scheduled collection using APScheduler.
-- FastAPI Swagger docs at `/docs`.
-- SQLite by default; PostgreSQL supported through `DATABASE_URL`.
-- Docker Compose setup.
+- Demo mode is enabled by default. Demo prices are generated sample records and are labelled as sample data.
+- To request provider-backed offers, configure Amadeus credentials and set `FARE_PROVIDER=amadeus`.
+- Provider coverage and prices depend on your Amadeus account and environment. Test-environment results are not guaranteed bookable prices.
+- FarePulse is a research prototype, not an official Consumer Price Index or a guaranteed cheapest-fare service.
 
-## Quick start (local)
+## Deploy the complete app to Vercel
 
-Requirements: Python 3.11+, Node.js 20+.
+The repository keeps the React/Vite frontend and FastAPI backend together. Vercel serves the frontend build and routes `/api/*` requests to the Python function in `api/index.py`.
 
-### 1. Backend
+### 1. Import the repository
+
+1. Push or merge the deployment branch into GitHub.
+2. Open [Vercel New Project](https://vercel.com/new).
+3. Import `vedantrandive02/FarePulse`.
+4. Keep the project root set to the repository root (do not select a subfolder).
+5. Vercel should use the included `vercel.json` build command and `dist` output directory.
+
+### 2. Add a persistent PostgreSQL database
+
+Vercel function filesystems are not a persistent database. Create a managed PostgreSQL database (for example, Neon or Supabase) and copy its connection string.
+
+In Vercel → Project → Settings → Environment Variables, add:
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | Your PostgreSQL URL. Prefer `postgresql+psycopg://...`; `postgres://` and `postgresql://` are normalized automatically. |
+| `FARE_PROVIDER` | `demo` initially, or `amadeus` when credentials are ready |
+| `CORS_ORIGINS` | Your Vercel deployment origin, e.g. `https://your-project.vercel.app` |
+| `SCHEDULER_ENABLED` | `false` |
+| `SECRET_KEY` | A long, random secret |
+| `AMADEUS_CLIENT_ID` | Only required for Amadeus |
+| `AMADEUS_CLIENT_SECRET` | Only required for Amadeus |
+| `AMADEUS_BASE_URL` | `https://test.api.amadeus.com` for testing |
+
+Do not commit real credentials or a real `.env` file. Leave `VITE_API_URL` unset when frontend and API share the same Vercel domain.
+
+### 3. Deploy
+
+Save the environment variables, then trigger a new deployment from the Vercel Deployments tab. After it finishes, test:
+
+- `https://YOUR-PROJECT.vercel.app/`
+- `https://YOUR-PROJECT.vercel.app/api/health`
+- `https://YOUR-PROJECT.vercel.app/api/docs`
+
+The health endpoint should return `status: ok`. The first API invocation creates the database tables.
+
+### Serverless behavior
+
+Vercel functions do not keep an in-process scheduler running between requests. Fare observations are therefore collected when users search; the built-in APScheduler is disabled by default. A persistent PostgreSQL database is required to retain searches, tracks, alerts, and history across deployments and function instances. The optional email field on alerts is metadata only; email delivery is not configured.
+
+## Run locally
+
+Requirements: Python 3.12 and Node.js 20 or later.
+
+### Backend
+
 ```bash
-cd backend
 python -m venv .venv
-# Windows:
-.venv\Scripts\activate
+# Windows PowerShell:
+.venv\Scripts\Activate.ps1
 # macOS/Linux:
 source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
-uvicorn app.main:app --reload
+uvicorn main:app --reload
 ```
-API: http://localhost:8000  
-Docs: http://localhost:8000/docs
 
-### 2. Frontend
+API docs: http://127.0.0.1:8000/api/docs
+
+### Frontend
+
 In another terminal:
+
 ```bash
-cd frontend
 npm install
 npm run dev
 ```
-Open http://localhost:5173
 
-## Enable Amadeus API
-1. Create an API app at https://developers.amadeus.com/.
-2. Copy the API key and secret into `backend/.env`.
-3. Set `FARE_PROVIDER=amadeus`.
-4. Restart the backend.
+Open http://localhost:5173. Vite proxies `/api` requests to the local backend on port 8000.
+
+## Enable Amadeus
+
+Set the following environment variables in your backend environment:
 
 ```env
 FARE_PROVIDER=amadeus
@@ -59,17 +93,22 @@ AMADEUS_CLIENT_ID=your_client_id
 AMADEUS_CLIENT_SECRET=your_client_secret
 AMADEUS_BASE_URL=https://test.api.amadeus.com
 ```
-The test environment is for development and may not reflect production inventory or final bookable prices. Never commit `.env` or API secrets.
 
-## Docker
-From the repository root:
+Never expose Amadeus credentials in frontend variables or commit them to GitHub.
+
+## Docker Compose (optional local setup)
+
+The root Docker setup runs the React frontend, FastAPI API, and PostgreSQL locally:
+
 ```bash
 docker compose up --build
 ```
-Frontend: http://localhost:5173  
-Backend: http://localhost:8000/docs
 
-## API overview
+Frontend: http://localhost:5173  
+API docs: http://localhost:8000/docs
+
+## API endpoints
+
 - `GET /api/health`
 - `GET /api/dashboard`
 - `GET /api/fares/search?origin=DEL&destination=BOM&departure_date=2026-12-15&adults=1`
@@ -84,26 +123,9 @@ Backend: http://localhost:8000/docs
 - `GET /api/research/export.csv`
 
 ## Index methodology
-For each route and departure date, the index compares the average observed fare with the average fare in the earliest available collection date (the baseline).  
-`index = (current average / baseline average) × 100`.  
-An index of 110 means the observed average is 10% above that route/date baseline. Results are only as representative as the collected observations. The baseline and observation counts are exposed in the research view.
 
-## GitHub
-Create a new empty GitHub repository, then:
-```bash
-git init
-git add .
-git commit -m "Build FarePulse airfare tracking platform"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
-git push -u origin main
-```
+For each route and departure date, the index compares the current average observed fare with the average fare from the earliest collection date:
 
-## Production checklist
-- Use a managed PostgreSQL database.
-- Set a strong `SECRET_KEY` and restrict CORS to your deployed frontend domain.
-- Add HTTPS and secret management.
-- Use a production Amadeus account or another permitted data provider.
-- Configure email/SMS delivery for alerts if required (the current version exposes in-app alert status).
-- Deploy the frontend and API separately or use the included Docker setup.
-- Review provider terms, rate limits, data retention, and redistribution permissions.
+`index = (current average / baseline average) × 100`
+
+An index of 110 means the observed average is 10% above that route/date baseline. The index is only as representative as the recorded observations.
