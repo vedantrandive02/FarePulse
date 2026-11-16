@@ -8,9 +8,10 @@ class Settings(BaseSettings):
     amadeus_client_secret: str = ""
     amadeus_base_url: str = "https://test.api.amadeus.com"
     collection_interval_minutes: int = 360
-    cors_origins: str = "http://localhost:5173"
+    scheduler_enabled: bool = False
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
     secret_key: str = "development-only-change-me"
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore", case_sensitive=False)
 
     @property
     def origins(self):
