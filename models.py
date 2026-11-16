@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from sqlalchemy import String, Float, Integer, Date, DateTime, Boolean, Index
 from sqlalchemy.orm import Mapped, mapped_column
-from .database import Base
+from database import Base
 
 class FareObservation(Base):
     __tablename__ = "fare_observations"
