@@ -61,7 +61,8 @@ async def lifespan(app: FastAPI):
     yield
     if scheduler.running: scheduler.shutdown(wait=False)
 
-app = FastAPI(title=settings.app_name, version="1.0.0", lifespan=lifespan,
+app = FastAPI(title=settings.app_name, version="1.0.0", docs_url="/api/docs",
+              redoc_url="/api/redoc", openapi_url="/api/openapi.json", lifespan=lifespan,
               description="Airfare tracking and research prototype. Demo data is labelled.")
 app.add_middleware(CORSMiddleware, allow_origins=settings.origins,
                    allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
