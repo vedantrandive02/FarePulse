@@ -122,7 +122,7 @@ async def create_track(payload: TrackCreate, db: Session = Depends(get_db)):
     if existing: return {"id": existing.id, "message": "Route already tracked."}
     track = RouteTrack(**payload.model_dump())
     db.add(track); db.commit(); db.refresh(track)
-    await collect_for_track(track.id)
+    # Fare observations are recorded by explicit searches; serverless requests must stay short.
     return {"id": track.id, "message": "Route tracking started."}
 
 @app.get("/api/tracks")
