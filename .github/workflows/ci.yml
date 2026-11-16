@@ -43,8 +43,8 @@ jobs:
               assert client.get('/api/alerts').status_code == 200
               assert client.get('/api/research/index').status_code == 200
               assert client.get('/api/research/export.csv').status_code == 200
-              assert client.delete(f"/api/alerts/{alert.json()['id']}").status_code == 200
-              assert client.delete(f"/api/tracks/{track.json()['id']}").status_code == 200
+              assert client.delete('/api/alerts/' + str(alert.json()['id'])).status_code == 200
+              assert client.delete('/api/tracks/' + str(track.json()['id'])).status_code == 200
           PY
       - name: Install frontend dependencies
         run: npm install
