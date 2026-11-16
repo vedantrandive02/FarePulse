@@ -25,7 +25,6 @@ Requirements: Python 3.11+, Node.js 20+.
 
 ### 1. Backend
 ```bash
-cd backend
 python -m venv .venv
 # Windows:
 .venv\Scripts\activate
@@ -33,7 +32,7 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-uvicorn app.main:app --reload
+uvicorn main:app --reload
 ```
 API: http://localhost:8000  
 Docs: http://localhost:8000/docs
@@ -41,7 +40,6 @@ Docs: http://localhost:8000/docs
 ### 2. Frontend
 In another terminal:
 ```bash
-cd frontend
 npm install
 npm run dev
 ```
@@ -49,7 +47,7 @@ Open http://localhost:5173
 
 ## Enable Amadeus API
 1. Create an API app at https://developers.amadeus.com/.
-2. Copy the API key and secret into `backend/.env`.
+2. Copy the API key and secret into `.env`.
 3. Set `FARE_PROVIDER=amadeus`.
 4. Restart the backend.
 

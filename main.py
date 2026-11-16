@@ -8,11 +8,11 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from .config import settings
-from .database import Base, engine, get_db, SessionLocal
-from .models import FareObservation, RouteTrack, PriceAlert
-from .schemas import TrackCreate, AlertCreate
-from .providers import search_fares
+from config import settings
+from database import Base, engine, get_db, SessionLocal
+from models import FareObservation, RouteTrack, PriceAlert
+from schemas import TrackCreate, AlertCreate
+from providers import search_fares
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("farepulse")

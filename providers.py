@@ -1,7 +1,7 @@
 from datetime import date, datetime
 import random
 import httpx
-from .config import settings
+from config import settings
 
 class AmadeusProvider:
     def __init__(self):
