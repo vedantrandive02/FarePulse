@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     amadeus_client_id: str = ""
     amadeus_client_secret: str = ""
     amadeus_base_url: str = "https://test.api.amadeus.com"
+    serpapi_api_key: str = ""
+    serpapi_base_url: str = "https://serpapi.com/search.json"
     collection_interval_minutes: int = 360
     cors_origins: str = "http://localhost:5173"
     secret_key: str = "development-only-change-me"
