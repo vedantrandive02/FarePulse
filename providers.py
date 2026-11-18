@@ -62,7 +62,78 @@ def demo_fares(origin: str, destination: str, departure_date: date, count: int =
             "provider": "demo", "is_sample": True})
     return rows
 
+class SerpapiProvider:
+    def __init__(self):
+        if not settings.serpapi_api_key:
+            raise RuntimeError("SerpAPI key is missing. Set SERPAPI_API_KEY in .env.")
+
+    async def search(self, origin: str, destination: str, departure_date: date, adults: int = 1):
+        params = {
+            "engine": "google_flights",
+            "departure_id": origin,
+            "arrival_id": destination,
+            "outbound_date": departure_date.isoformat(),
+            "currency": "INR",
+            "hl": "en",
+            "api_key": settings.serpapi_api_key,
+        }
+        async with httpx.AsyncClient(timeout=35) as client:
+            response = await client.get(settings.serpapi_base_url, params=params)
+            response.raise_for_status()
+            payload = response.json()
+
+        results = []
+
+        def extract_flights(flight_group):
+            items = []
+            for f in flight_group:
+                price = f.get("price")
+                if price is None:
+                    continue
+                flights = f.get("flights", [])
+                if not flights:
+                    continue
+                first = flights[0]
+                airline = first.get("airline", "Unknown")
+                items.append({
+                    "origin": origin,
+                    "destination": destination,
+                    "airline": airline,
+                    "departure_date": departure_date,
+                    "price": float(price),
+                    "currency": "INR",
+                    "provider": "serpapi",
+                    "is_sample": False,
+                })
+            return items
+
+        results.extend(extract_flights(payload.get("best_flights", [])))
+        results.extend(extract_flights(payload.get("other_flights", [])))
+
+        # Fallback: try to read top-level flights if best_flights/other_flights missing
+        if not results:
+            for f in payload.get("flights", []):
+                price = f.get("price")
+                if price is None:
+                    continue
+                results.append({
+                    "origin": origin,
+                    "destination": destination,
+                    "airline": f.get("airline", "Unknown"),
+                    "departure_date": departure_date,
+                    "price": float(price),
+                    "currency": "INR",
+                    "provider": "serpapi",
+                    "is_sample": False,
+                })
+
+        return results
+
+
 async def search_fares(origin, destination, departure_date, adults=1):
-    if settings.fare_provider.lower() == "amadeus":
+    provider = settings.fare_provider.lower()
+    if provider == "amadeus":
         return await AmadeusProvider().search(origin, destination, departure_date, adults)
+    if provider == "serpapi":
+        return await SerpapiProvider().search(origin, destination, departure_date, adults)
     return demo_fares(origin, destination, departure_date)
